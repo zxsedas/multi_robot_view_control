@@ -2,15 +2,22 @@
     <div class="controlArea">
         <h3 class=name>Robot{{ this.id }}</h3>
         <div class="wrap" >
-            <div class="key direct" @click="direct">W</div>
+            <div class="key direct" :class="flash_active[0] ? keyflash : ''" @click="direct">W</div>
             <div class="downArea">
-                <div class="key left" @click="left">A</div>
-                <div class="key stop" @click="stop">S</div>
-                <div class="key right" @click="right">D</div>
+                <div class="key left" :class="flash_active[1] ? keyflash : ''" @click="left">A</div>
+                <div class="key stop" :class="flash_active[2] ? keyflash : ''" @click="stop">S</div>
+                <div class="key right" :class="flash_active[3] ? keyflash : ''" @click="right">D</div>
             </div>   
+            <div class="param">
+             <label for="rate" class="vel_title">linear velocity rate: {{ twist.linear.x }}</label>
+            <input type="number" v-model="this.lin_vel_rate" v-on:input="fvel" id="rate" min="0" max="0.22">
+            <label for="rate" class="vel_title">angular velocity rate: {{ twist.angular.z }}</label>
+            <input type="number" v-model="this.ang_vel_rate" v-on:input="fvel" id="rate" min="0" max="2.84">
         </div>
-    
+        </div>
+         
     </div>
+    
 </template>
 
 <script>
@@ -21,6 +28,10 @@ export default {
         return {
             cmdPublisher: null,
             imgPublisher: null,
+            flash_active: [false, false, false, false], //direct,left,stop,right
+            keyflash: 'orange-flash',
+            lin_vel_rate: 0.01,
+            ang_vel_rate: 0.01,
             twist: {
                 linear: {x: 0.0, y:0.0, z:0.0},
                 angular: {x: 0.0, y:0.0, z:0.0},
@@ -42,19 +53,37 @@ export default {
                 messageType: 'geometry_msgs/Twist'
             })
         },
+        fvel(){
+            this.lin_vel_rate = Number(this.lin_vel_rate)
+            this.ang_vel_rate = Number(this.ang_vel_rate)
+        },
         direct(){
-            this.twist.linear.x += 0.01
+            this.changeKeyFalsh(0)
+            if(this.twist.linear.x <= 0.22){
+                this.twist.linear.x += this.lin_vel_rate
+                this.twist.linear.x = Number(this.twist.linear.x.toFixed(2))
+            }       
             this.cmdPublisher.publish(this.twist) 
+           
         },
         left(){
-            this.twist.angular.z += 0.01
+            this.changeKeyFalsh(1)
+            if(this.twist.angular.z <= 2.84){
+                this.twist.angular.z += this.ang_vel_rate
+                this.twist.angular.z = Number(this.twist.angular.z.toFixed(2))
+            }
             this.cmdPublisher.publish(this.twist) 
         },
         right(){
-            this.twist.angular.z -= 0.01
+            this.changeKeyFalsh(3)
+            if(this.twist.angular.z >= -2.84){
+                this.twist.angular.z -= this.ang_vel_rate
+                this.twist.angular.z = Number(this.twist.angular.z.toFixed(2))
+            }
             this.cmdPublisher.publish(this.twist) 
         },
         stop(){
+            this.changeKeyFalsh(2)
             this.reset()
             this.cmdPublisher.publish(this.twist) 
         },
@@ -65,6 +94,10 @@ export default {
             this.twist.angular.x = 0.0
             this.twist.angular.y = 0.0
             this.twist.angular.z = 0.0
+        },
+        changeKeyFalsh(id){
+            for(let i=0;i<4;i++)this.flash_active[i]=false
+            this.flash_active[id] = true
         },
         keyboardControl(){
             document.onkeydown = () =>{
@@ -99,6 +132,20 @@ export default {
 </script>
 
 <style scoped>
+    @keyframes orange-flash{
+        0%{
+            background-color: rgb(202, 84, 16, 0);
+        }
+        50%{
+            background-color: rgb(202, 84, 16, 1);
+        }
+        100%{
+            background-color: rgb(202, 84, 16, 0);
+        }
+    }
+    .orange-flash{
+        animation: orange-flash 2s infinite;
+    }
     @media screen and (min-width: 1000px){
         .controlArea{
             display: inline-block;
@@ -123,6 +170,7 @@ export default {
         margin-bottom: 10px;
     }
     .downArea{
+        position: relative;
         margin: auto;
         text-align: center;
     }
@@ -145,4 +193,23 @@ export default {
     .name{
         color: red;
     }
+    .param{
+        width: 300px;
+        position: absolute;
+        top: 0;
+        right: -350px;
+        display: flex;
+        flex-wrap: wrap;
+    }
+    .vel_title{
+        width: 100%;
+        color:white;
+        font-size: 18px;
+    }
+    #rate{
+        width: 50%;
+        padding: 4px 6px;
+        font-size: 18px;
+    }
+
 </style>

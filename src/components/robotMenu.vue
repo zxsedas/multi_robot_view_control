@@ -1,16 +1,24 @@
 <template>
     <div class="menu">
-        <div class="item connect" @click="connectToggle">
+        <div class="item touch" @click="connectToggle">
                 <span class="light" :class="status"></span> 
             <span>Connect</span>
         </div>
-        <div class="item" :class="{control: this.isActive, disabled: this.disabled}" @click="controlToggle"><span>Control</span></div>
-        <div class="item" :class="{view: this.isActive, disabled: this.disabled}" @click="viewToggle"><span>View</span></div>
-        <div class="item"><span>Navigation</span></div>
-        <div class="item"><span>task</span></div>
+        <div class="item touch" @click="selectRobotToggle"><span>Select robot</span>
+           
+        </div>
+        <div class="item" :class="{touch: this.isActive, disabled: this.disabled}" @click="controlToggle"><span>Control</span></div>
+        <div class="item" :class="{touch: this.isActive, disabled: this.disabled}" @click="viewToggle"><span>View</span></div>
+        
+        <!-- <div class="item"><span>task</span></div> -->
+        
     </div>
     <transition name="connect">
         <robotConnect v-show="connectShow" @update="updateConnectInfo"/>
+    </transition>
+
+     <transition>
+        <RobotSelect v-if="selectRobotShow" @update="updateControlInfo"/>
     </transition>
     
    
@@ -31,18 +39,23 @@
 import robotConnect from '@/components/robotConnect.vue'
 import robotControl from '@/components/robotControl.vue'
 import robotCamera from '@/components/robotCamera.vue'
+import robotSelect from '@/components/robotSelect.vue'
 import ROSLIB from 'roslib'
+import RobotSelect from '@/components/robotSelect.vue'
 
 export default {
     name: 'robotMenu',
     components: {
-        robotConnect,
-        robotControl,
-        robotCamera
-    },
+    robotConnect,
+    robotControl,
+    robotCamera,
+    robotSelect,
+    RobotSelect
+},
     data() {
         return {
             connectShow: false,
+            selectRobotShow: false,
             controlShow: false,
             viewShow: false,
             isActive: false,
@@ -51,16 +64,15 @@ export default {
             ROSLIB: ROSLIB,
             robotType: '',
             status: 'orange-light',
-            view_controls: [
-                { id: 0, view_sub_name: '/burger1/image', vel_sub_name: '/burger1/cmd_vel', active: false},
-                { id: 1, view_sub_name: '/burger2/image', vel_sub_name: '/burger2/cmd_vel', active: false},
-                // { id: 2, view_sub_name: '/burger3/image', vel_sub_name: '/burger3/cmd_vel', active: false}
-            ]
+            view_controls: null
         }
     },
     methods:{
         connectToggle(){
             this.connectShow = !this.connectShow
+        },
+        selectRobotToggle(){
+            this.selectRobotShow = !this.selectRobotShow
         },
         controlToggle(){
             if(this.isActive)this.controlShow = !this.controlShow
@@ -85,6 +97,9 @@ export default {
                 this.status = 'orange-light'
             })
             this.connectShow = false
+        },
+        updateControlInfo(data){
+            this.view_controls = data
         },
         changeControl(id){
             for(let i=0;i<this.view_controls.length;i++){
@@ -117,21 +132,7 @@ export default {
 .item > span{
     vertical-align: middle;
 }
-.view:hover{
-    transition: .3s;
-    background-color: rgb(235, 43, 36);
-    color: rgb(5, 0, 0);
-    border-radius: 5px;
-    cursor: pointer;
-}
-.connect:hover{
-    transition: .3s;
-    background-color: rgb(235, 43, 36);
-    color: rgb(5, 0, 0);
-    border-radius: 5px;
-    cursor: pointer;
-}
-.control:hover {
+.touch:hover{
     transition: .3s;
     background-color: rgb(235, 43, 36);
     color: rgb(5, 0, 0);
